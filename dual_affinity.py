@@ -16,7 +16,42 @@ def emd_dual_aff(emd,eps=1.0):
     
     return np.exp(-emd/epall)
 
-def calc_emd(data,row_tree,alpha=1.0,beta=0.0):
+def other_old_calc_emd(data,row_tree,alpha=1.0,beta=0.0):
+    """
+    Calculates the EMD on the *columns* from data and a tree on the rows.
+    each level is weighted by 2**((1-level)*alpha)
+    each folder size is raised to the beta power for weighting.
+    """
+    rows,cols = np.shape(data)
+    assert rows == row_tree.size, "Tree size must match # rows in data."
+
+    emd = np.zeros([cols,cols])
+    coefs = tree_util.tree_averages(data, row_tree)
+    level_elements = collections.defaultdict(list)
+    level_sizes = collections.defaultdict(int)
+    
+    for node in row_tree:
+        level_elements[node.level].append(node.idx)
+        level_sizes[node.level] += node.size
+        
+    folder_fraction = np.array([node.size for node in row_tree],np.float)
+    for level in xrange(1,row_tree.tree_depth+1):
+        fsize = np.sum(folder_fraction[level_elements[level]])
+        folder_fraction[level_elements[level]] /= fsize
+    
+    folder_fraction = folder_fraction**beta
+    coefs = np.diag(folder_fraction).dot(coefs)
+    for level in xrange(1,row_tree.tree_depth+1):
+        pds = spsp.distance.pdist(coefs[level_elements[level],:].T,"cityblock")
+        distances = spsp.distance.squareform(pds)
+#         distances = spsp.distance.cdist(coefs[level_elements[level],:].T,
+#                                         coefs[level_elements[level],:].T,
+#                                         "cityblock")
+        emd += (2.0**((1.0-level)*alpha))*distances
+
+    return emd
+
+def old_calc_emd(data,row_tree,alpha=1.0,beta=0.0):
     """
     Calculates the EMD on the *columns* from data and a tree on the rows.
     each level is weighted by 2**((1-level)*alpha)
@@ -45,10 +80,30 @@ def calc_emd(data,row_tree,alpha=1.0,beta=0.0):
         distances = spsp.distance.cdist(coefs[level_elements[level],:].T,
                                         coefs[level_elements[level],:].T,
                                         "cityblock")
-        emd += (2**((1.0-level)*alpha))*distances
+        emd += (2.0**((1.0-level)*alpha))*distances
 
     return emd
 
+def calc_emd(data,row_tree,alpha=1.0,beta=0.0):
+    """
+    Calculates the EMD on the *columns* from data and a tree on the rows.
+    each level is weighted by 2**((1-level)*alpha)
+    each folder size is raised to the beta power for weighting.
+    """
+    rows,_ = np.shape(data)
+    assert rows == row_tree.size, "Tree size must match # rows in data."
+
+    folder_fraction = np.array([((node.size*1.0/rows)**beta)*(2.0**((1.0-node.level)*alpha))
+                                 for node in row_tree])
+    coefs = tree_util.tree_averages(data,row_tree)
+    
+    ext_vecs = np.diag(folder_fraction).dot(coefs)
+    
+    pds = spsp.distance.pdist(ext_vecs.T,"cityblock")
+    distances = spsp.distance.squareform(pds)
+
+    return distances
+    
 def calc_emd_ref(ref_data,data,row_tree,alpha=1.0,beta=0.0):
     """
     Calculates the EMD from a set of points to a reference set of points
