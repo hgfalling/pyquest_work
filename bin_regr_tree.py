@@ -5,7 +5,7 @@ import markov
 import tree
 
 def break_node(train_data,col_tree_node,row_tree,regressors=None,
-               alpha=0.5,beta=1.0):
+               alpha=0.5,beta=1.0,col_emd=None):
     """
     First calculates the EMD on the columns of train_data 
     in col_tree_node.elements using row_tree. Converts that to an affinity.
@@ -18,16 +18,20 @@ def break_node(train_data,col_tree_node,row_tree,regressors=None,
     
     col_indices = col_tree_node.elements
     node_data = train_data[:,col_indices].astype(np.float64)
-    col_emd = dual_affinity.calc_emd(node_data,row_tree,alpha,beta)
-    col_aff = dual_affinity.emd_dual_aff(col_emd)
     
+    if col_emd is None:
+        col_emd = dual_affinity.calc_emd(node_data,row_tree,alpha,beta)
+        col_aff = dual_affinity.emd_dual_aff(col_emd)
+    else:
+        col_aff = dual_affinity.emd_dual_aff(col_emd[:,col_indices][col_tree_node.elements,:])
+        
     vecs,_ = markov.markov_eigs(col_aff,2)
     eig = vecs[:,1]
     
     if regressors is None:
         regressors = range(row_tree.size)
     
-    _,active,_ = sklm.lars_path(node_data[regressors,:].T,eig,max_iter=10)
+    _,active,_ = sklm.lars_path(node_data[regressors,:].T,eig,max_iter=50)
     
     regr_indices = active[0:5]
     
@@ -40,7 +44,7 @@ def break_node(train_data,col_tree_node,row_tree,regressors=None,
     col_tree_node.create_subclusters(partition)
     return np.array([regressors[x] for x in regr_indices]),lm
 
-def process_node(train_data,row_tree,node_list,regressors=None):
+def process_node(train_data,row_tree,node_list,regressors=None,col_emd=None):
     node = node_list.pop(0)
     if regressors is None:
         regressors = range(row_tree.size)
@@ -48,10 +52,11 @@ def process_node(train_data,row_tree,node_list,regressors=None):
     if node.size < 12:
         node.create_subclusters(range(node.size))
     else:
-        active,lm = break_node(train_data,node,row_tree,regressors)
+        active,lm = break_node(train_data,node,row_tree,regressors,col_emd=col_emd)
         node.lm = lm
         node.active = active
-        node_list.extend(node.children)
+        if len(node.children) > 1:
+            node_list.extend(node.children)
 
 def mtree(train_data,row_tree,regressors=None):
     root = tree.ClusterTreeNode(range(train_data.shape[1]))
@@ -60,8 +65,10 @@ def mtree(train_data,row_tree,regressors=None):
     if regressors is None:
         regressors = range(row_tree.size)
 
+    col_emd = dual_affinity.calc_emd(train_data,row_tree)
+
     while node_list:
-        process_node(train_data,row_tree,node_list,regressors)
+        process_node(train_data,row_tree,node_list,regressors,col_emd)
     
     root.make_index()
     return root
