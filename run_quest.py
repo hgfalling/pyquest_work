@@ -105,7 +105,6 @@ class PyQuestParams(object):
                 self.col_beta = DEFAULT_DUAL_BETA
 
     def set_iters(self,**kwargs):
-        print kwargs
         if "n_iters" in kwargs:
             self.n_iters = kwargs["n_iters"]
         else:
