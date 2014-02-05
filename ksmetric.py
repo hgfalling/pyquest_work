@@ -41,9 +41,6 @@ def realize(model):
 
 def ksm_plot(X,Xhat):
     sorder = Xhat.flatten().argsort()
-    Xp = (X + 1.0)/2.0 
-    nr = (Xhat + 1.0)/2.0
-    print "KS: {} L1KS: {}".format(ks_metric(Xp,nr),ks_metric_L1(Xp,nr))
-    print "L1KS: {}"
-    plt.plot(np.cumsum((nr-Xp).flatten()[sorder]))
+    print "L1: {} KS: {} L1KS: {}".format(np.sum(np.abs(X-Xhat)),ks_metric(X,Xhat),ks_metric_L1(X,Xhat))
+    plt.plot(np.cumsum((Xhat-X).flatten()[sorder]))
     plt.show()

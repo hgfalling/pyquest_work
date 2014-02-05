@@ -14,6 +14,11 @@ def recon_2d_folder_size(data,row_tree,col_tree,threshold=0.0):
     coefs = tree_util.bitree_transform(data,row_tree,col_tree)
     return tree_util.inverse_bitree_transform(coefs,row_tree,col_tree,threshold)
 
+def recon_2d_folder_level(data,row_tree,col_tree,row_level,col_level):
+    coefs = tree_util.bitree_transform(data,row_tree,col_tree)
+    return tree_util.inverse_bitree_transform_level(coefs,row_tree,col_tree,
+                                                    row_level,col_level)
+
 def sure(haar_coefs,t,estimated_var=1.0):
     term1 = len(haar_coefs)
     term2 = 2*(np.sum(np.abs(haar_coefs) <= t))

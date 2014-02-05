@@ -105,6 +105,19 @@ def ibt(coefs,row_tree,col_tree,threshold=0.0):
     #return mat, np.sum((folder_frac > threshold)*np.abs(coefs))
     return mat
 
+def threshold_coefs(coefs,row_tree,col_tree,threshold):
+    new_coefs = coefs.copy()
+    bsizes = bifolder_sizes(row_tree,col_tree)      
+    folder_frac = 1.0*bsizes/bsizes[0,0]
+    for row in row_tree:
+        for col in col_tree:
+            if folder_frac[row.idx,col.idx] > 0.0:
+                if np.max(folder_frac[row.elements,:][:,col.elements]) < threshold:
+                    for r in row.elements:
+                        for c in col.elements:
+                            new_coefs[r,c] = 0.0
+    return inverse_tree_transform(inverse_tree_transform(new_coefs.T,col_tree).T,row_tree)
+                 
 def inverse_bitree_transform(coefs,row_tree,col_tree,threshold=0.0):
     """
     coefs is an mxn matrix of bitree coefficients
@@ -128,10 +141,16 @@ def inverse_bitree_transform_level(coefs,row_tree,col_tree,row_level,col_level):
     are excluded from the reconstruction.
     """ 
     new_coefs = coefs.copy()
-    m = min([x.idx for x in row_tree if x.level > row_level])
-    n = min([x.idx for x in col_tree if x.level > col_level])
-    new_coefs[n:,:] = 0.0
-    new_coefs[:,m:] = 0.0
+    if row_level < row_tree.tree_depth:
+        m = [x.idx for x in row_tree if x.level > row_level]
+        new_coefs[m,:] = 0.0
+    if col_level < col_tree.tree_depth:
+        n = [x.idx for x in col_tree if x.level > col_level]
+        new_coefs[:,n] = 0.0
+    #m = min([x.idx for x in row_tree if x.level > row_level])
+    #n = min([x.idx for x in col_tree if x.level > col_level])
+    #new_coefs[n:,:] = 0.0
+    #new_coefs[:,m:] = 0.0
     return inverse_tree_transform(inverse_tree_transform(new_coefs.T,col_tree).T,row_tree)
 
 def tree_sums(data,row_tree):
