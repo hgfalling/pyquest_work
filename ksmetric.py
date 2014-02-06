@@ -41,6 +41,25 @@ def realize(model):
 
 def ksm_plot(X,Xhat):
     sorder = Xhat.flatten().argsort()
-    print "L1: {} KS: {} L1KS: {}".format(np.sum(np.abs(X-Xhat)),ks_metric(X,Xhat),ks_metric_L1(X,Xhat))
+    print "L1: {} KS: {} L1KS: {} Kuiper: {}".format(np.sum(np.abs(X-Xhat)),
+                                          ks_metric(X,Xhat),
+                                          ks_metric_L1(X,Xhat),
+                                          kuiper(X,Xhat))
     plt.plot(np.cumsum((Xhat-X).flatten()[sorder]))
     plt.show()
+    
+def kuiper(observed_data,model_data):
+    strout = "samples must have the same shape"
+    assert observed_data.shape == model_data.shape, strout
+    
+    od = observed_data.flatten()
+    md = model_data.flatten()
+    
+    sorder = md.argsort()
+    residual = od-md
+
+    cs = np.cumsum(residual[sorder])
+
+    k = np.max(cs) - np.min(cs)
+    
+    return k

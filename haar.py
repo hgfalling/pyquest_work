@@ -83,14 +83,26 @@ def level_correspondence(row_tree):
             z[t:marks[idx+1]] = idx+1
     return z
         
-def bihaar_transform(data,row_tree,col_tree):
-    row_hb = compute_haar(row_tree)
-    col_hb = compute_haar(col_tree)
+def bihaar_transform(data,row_tree,col_tree,folder_sizes=False):
+    if folder_sizes:
+        row_hb, row_parents = compute_haar(row_tree,folder_sizes)
+        row_parents[row_parents == -1] = 0
+        col_hb, col_parents = compute_haar(col_tree,folder_sizes)
+        col_parents[col_parents == -1] = 0
+    else:
+        row_hb = compute_haar(row_tree,folder_sizes)
+        col_hb = compute_haar(col_tree,folder_sizes)
     #print row_hb.shape, col_hb.shape, data.shape
     row_transform = row_hb.T.dot(data)
     #print row_transform.shape
     coefs = col_hb.T.dot(row_transform.T)
-    return coefs.T
+    if folder_sizes:
+        row_sizes = np.array([row_tree[x].size for x in row_parents])
+        col_sizes = np.array([col_tree[x].size for x in col_parents])
+        return coefs.T, np.outer(row_sizes,
+                                 col_sizes)/(1.0*row_tree.size*col_tree.size)
+    else:
+        return coefs.T
     
 def inverse_bihaar_transform(coefs,row_tree,col_tree):
     row_hb = compute_haar(row_tree)

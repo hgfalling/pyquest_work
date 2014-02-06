@@ -14,10 +14,20 @@ def recon_2d_folder_size(data,row_tree,col_tree,threshold=0.0):
     coefs = tree_util.bitree_transform(data,row_tree,col_tree)
     return tree_util.inverse_bitree_transform(coefs,row_tree,col_tree,threshold)
 
+def recon_2d_haar_folder_size(data,row_tree,col_tree,threshold=0.0):
+    coefs, folder_sizes = haar.bihaar_transform(data,row_tree,col_tree,True)
+    coefs[folder_sizes < threshold] = 0.0
+    return haar.inverse_bihaar_transform(coefs,row_tree,col_tree)
+    
 def recon_2d_folder_level(data,row_tree,col_tree,row_level,col_level):
     coefs = tree_util.bitree_transform(data,row_tree,col_tree)
     return tree_util.inverse_bitree_transform_level(coefs,row_tree,col_tree,
                                                     row_level,col_level)
+
+def threshold_recon(data,min_val,max_val):
+    data[data < min_val] = min_val
+    data[data > max_val] = max_val
+    return data
 
 def sure(haar_coefs,t,estimated_var=1.0):
     term1 = len(haar_coefs)
