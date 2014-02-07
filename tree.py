@@ -75,6 +75,7 @@ class ClusterTreeNode(object):
         Performs a BFS traversal of the tree.
         External use is deprecated now, use the iterator methods instead.
         Left here for compatibility reasons, may become a _ method later.
+        Later note: okay to use for non-root nodes of the tree.
         """
         #BFS
         queue = []
@@ -229,6 +230,15 @@ class ClusterTreeNode(object):
             for m in l:
                 partition[m] = idx
         return partition
+    
+    def all_parents(self):
+        curnode = self
+        parents = []
+        while curnode.parent is not None:
+            parents.append(curnode.parent.idx)
+            curnode = curnode.parent
+        return parents
+    
 
 def dyadic_tree(n):
     """
