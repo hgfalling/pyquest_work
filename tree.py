@@ -239,6 +239,12 @@ class ClusterTreeNode(object):
             curnode = curnode.parent
         return parents
     
+    def all_children(self):
+        if len(self.children) == 0:
+            return []
+        else:
+            return self.traverse()[1:]
+    
 
 def dyadic_tree(n):
     """
