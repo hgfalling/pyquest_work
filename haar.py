@@ -21,19 +21,20 @@ def haar_vectors(n,node_sizes):
         haar_basis[:,i] = haar_basis[:,i] / norm_i
     return haar_basis
 
-def compute_haar(tree,return_nodes=False):
+def compute_haar(t,return_nodes=False):
     """
     Takes a full tree of type ClusterTreeNode and computes the canonical Haar-like basis.
     """
     
-    n = len(tree.dfs_leaves())
+    n = t.size
+    print n
     haar_basis = np.zeros([n,n])
     node_ids = np.zeros(n,np.int)
     node_ids[0] = -1
     cur_col = 1
     haar_basis[:,0] = 1/np.sqrt(n)
     
-    for node in tree:
+    for node in t:
         node_size = len(node.children)
         if node_size > 0:
             basis_vectors = haar_vectors(node_size,
