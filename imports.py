@@ -1,4 +1,5 @@
 import matplotlib
+
 #matplotlib.interactive(True)
 #matplotlib.use('WXAgg')
 
@@ -17,6 +18,8 @@ import viewer_files
 import artificial_data
 import haar
 
+import contextlib
+
 import cPickle
 import itertools
 import numpy as np
@@ -25,6 +28,8 @@ import scipy.spatial as spsp
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+
+import plot_utils
 
 cmap = plt.get_cmap("RdBu_r")
 cnorm = matplotlib.colors.Normalize(vmin=-1,vmax=1,clip=False)
@@ -46,5 +51,12 @@ def write_data_file(filename,*args,**kwargs):
     fout = open(filename,"wb")
     np.savez_compressed(fout,*args,**kwargs)
     fout.close()
+    
+@contextlib.contextmanager
+def printoptions(*args,**kwargs):
+    original = np.get_printoptions()
+    np.set_printoptions(*args,**kwargs)
+    yield
+    np.set_printoptions(**original)
     
     

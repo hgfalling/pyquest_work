@@ -1,49 +1,66 @@
 import numpy as np
 
-def haar_vectors(n,node_sizes):
+def haar_vectors(n,node_sizes,norm="L2"):
     """
-    returns a matrix of haar basis vectors for a tree which divides into n subnodes. 
-    Still needs to be scaled to the size of the nodes.
-    Example: haar_coeffs(2) returns 
-    [1/sqrt(2)  1/sqrt(2)
-     1/sqrt(2) -1/sqrt(2)]
+    Returns a matrix of haar basis vectors for a tree with n subnodes of 
+    sizes given in node_sizes.
+    norm should be either "L2" or "L1"; L2 gives an orthonormal basis
+    while L1 shifts the normalization to the inverse transform. 
     """
-    
+
     haar_basis = np.zeros([n,n])
-    haar_basis[:,0] = 1.0/np.sqrt(np.sum(node_sizes))
+    haar_basis[:,0] = 1.0
+
+    #if we want the orthonormal basis, then we normalize by 1/sqrt(n) on the
+    #constant vector.
+    if norm == "L2":
+        haar_basis[:,0] /= np.sqrt(n)
+
     for i in xrange(1,n):
-        haar_basis[i-1,i] = np.sum(node_sizes[i:])
-        haar_basis[i:,i] = -1*node_sizes[i-1]
+        pluses = node_sizes[i-1]
+        minuses = np.sum(node_sizes[i:])
         
-        norm_i = np.sqrt(np.sum((haar_basis[:,i]**2) * (node_sizes)))
-        if norm_i < 1e-15:
-            print i
-        haar_basis[:,i] = haar_basis[:,i] / norm_i
+        haar_basis[i-1,i] = minuses
+        haar_basis[i:,i] = -1.0*pluses
+        
+        if norm == "L2":
+            norm_i = np.sqrt(np.sum((haar_basis[:,i]**2) * (node_sizes)))
+        elif norm == "L1":
+            norm_i = 2.0*(minuses*pluses)/(minuses+pluses)
+
+        haar_basis[:,i] /= norm_i
+       
     return haar_basis
 
-def compute_haar(t,return_nodes=False):
+def compute_haar(t,return_nodes=False,norm="L2"):
     """
-    Takes a full tree of type ClusterTreeNode and computes the canonical Haar-like basis.
+    Takes a full tree of type ClusterTreeNode and computes the canonical 
+    Haar-like basis.
+    return_nodes specifies whether we want to return parent node.idx associated
+    with each basis vector. (-1 means this is the root ie constant vector)
     """
     
     n = t.size
-    print n
     haar_basis = np.zeros([n,n])
     node_ids = np.zeros(n,np.int)
     node_ids[0] = -1
     cur_col = 1
-    haar_basis[:,0] = 1/np.sqrt(n)
+    haar_basis[:,0] = 1.0
+    if norm == "L2":
+        haar_basis[:,0] /= np.sqrt(n)
     
     for node in t:
         node_size = len(node.children)
+        schildren = list(reversed(sorted(node.children,key=lambda x:x.size)))
         if node_size > 0:
-            basis_vectors = haar_vectors(node_size,
-                                         np.array([x.size for x in node.children]))
+            basis_vecs = haar_vectors(node_size,
+                                      np.array([x.size for x in schildren]),
+                                      norm)
             
             for i in xrange(1,node_size):
                 #each basis vector will be a column of the basis
-                for j in xrange(node_size):
-                    haar_basis[node.children[j].elements,cur_col] = basis_vectors[j,i]
+                for j,child in enumerate(schildren):
+                    haar_basis[child.elements,cur_col] = basis_vecs[j,i]
                     node_ids[cur_col] = node.idx
                 cur_col += 1
             
@@ -53,19 +70,17 @@ def compute_haar(t,return_nodes=False):
     else:
         return haar_basis
 
-def haar_transform(data,row_tree,hb=None):
-    if hb is None:
-        basis = compute_haar(row_tree)
-        return basis.T.dot(data)
-    else:
-        return hb.T.dot(data)
+def haar_transform(data,row_tree,norm="L2"):
+    basis = compute_haar(row_tree,False,norm)
+    return basis.T.dot(data)
     
-def inverse_haar_transform(coefs,row_tree,hb=None):
-    if hb is None:
-        basis = compute_haar(row_tree)
-        return basis.dot(coefs)
-    else:
-        return hb.dot(coefs)
+def inverse_haar_transform(coefs,row_tree,norm="L2"):
+    basis = compute_haar(row_tree)
+    if norm == "L1":
+        norm_vec = np.sum(np.abs(basis),axis=0)
+        for col in xrange(basis.shape[1]):
+            basis[:,col] /= norm_vec[col]
+    return basis.dot(coefs)
     
 def level_correspondence(row_tree):
     """
