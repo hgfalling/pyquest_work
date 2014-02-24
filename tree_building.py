@@ -99,7 +99,7 @@ def clusterlist_to_tree(cluster_list):
         root.make_index()
         return root
 
-def cluster_from_affinity(affinity,eps=1.0):
+def cluster_from_affinity(affinity,eps=1.0,threshold=1e-8):
     #print "eps: {}".format(eps)
     A = affinity.copy()
     A -= np.diag(np.diag(A))
@@ -107,13 +107,14 @@ def cluster_from_affinity(affinity,eps=1.0):
     Alocs = np.argmax(A,axis=1)  #stores the location of the max entry in this row
     Amaxes = A[range(A.shape[0]),Alocs] #stores the max entry in this row
     
-    penalty = np.median(A[A>0.0])*eps
+    penalty = np.median(A[A>threshold])*eps
     #print "penalty: {}".format(penalty)
     clustering = Clustering(affinity.shape[0])
     joins = 0
     while 1:
         row = np.argmax(Amaxes)
         col = Alocs[row]
+        #print "row: {} col: {}".format(row,col)
         if Amaxes[row] <= penalty and joins > 0:
             break
         if clustering.test_join(A[row,col],row,col,penalty):
@@ -137,7 +138,34 @@ def make_tree_diffusion(affinity,penalty_constant):
         clusters = cluster_from_affinity(A,penalty_constant)
     return clusters
 
-def make_tree_embedding(affinity,penalty_constant):
+def flex_tree(affinity,penalty_constant,threshold=1e-8):
+    """
+    Takes affinity, a square matrix of positive entries representing an 
+    affinity between n nodes, and creates a flexible tree based on 
+    that affinity.
+    """ 
+    #print "***starting***"
+    q = np.eye(affinity.shape[0]) #initialize q for code brevity.
+    cluster_list = []
+    i=0
+    while 1:
+        #print "clustering at level {}".format(i)
+        i+=1 
+        new_affinity = q.dot(affinity).dot(q.T)
+        cluster_list.append(cluster_from_affinity(new_affinity,
+                                                  penalty_constant,
+                                                  threshold))
+        #print "clusters: {}".format(len(cluster_list[-1]))
+        if len(cluster_list[-1]) == 1:
+            break
+        temp_tree = clusterlist_to_tree(cluster_list)
+        cpart = ClusteringPartition([x.elements for x in temp_tree.dfs_level(2)])
+        q,_ = cluster_transform_matrices(cpart)
+    return clusterlist_to_tree(cluster_list)    
+
+
+def make_tree_embedding(affinity,penalty_constant,threshold=1e-8):
+    #print "***starting***"
     q = np.eye(affinity.shape[0]) #initialize q for code brevity.
     cluster_list = []
     i=0
@@ -152,23 +180,4 @@ def make_tree_embedding(affinity,penalty_constant):
         temp_tree = clusterlist_to_tree(cluster_list)
         cpart = ClusteringPartition([x.elements for x in temp_tree.dfs_level(2)])
         q,_ = cluster_transform_matrices(cpart)
-    return clusterlist_to_tree(cluster_list)
-
-def make_tree_embedding2(affinity,penalty_constant):
-    q = np.eye(affinity.shape[0]) #initialize q for code brevity.
-    cluster_list = []
-    i=0
-    new_affinity = affinity.copy()
-    while 1:
-        #print "clustering at level {}".format(i)
-        i+=1 
-        new_affinity = q.dot(new_affinity).dot(q.T)
-        cluster_list.append(cluster_from_affinity(new_affinity,penalty_constant))
-        #print "clusters: {}".format(len(cluster_list[-1]))
-        if len(cluster_list[-1]) == 1:
-            break
-        temp_tree = clusterlist_to_tree(cluster_list)
-        cpart = ClusteringPartition([x.elements for x in temp_tree.dfs_level(2)])
-        q,_ = cluster_transform_matrices(cpart)
-        new_affinity = new_affinity.dot(new_affinity.T)
     return clusterlist_to_tree(cluster_list)
