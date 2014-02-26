@@ -1,3 +1,4 @@
+import copy
 """
 Defines a tree structure for use in the questionnaire.
 """
@@ -244,7 +245,27 @@ class ClusterTreeNode(object):
             return []
         else:
             return self.traverse()[1:]
+
+    def tree_distance(self,i,j):
+        curnode = self
+        while curnode.parent is not None:
+            curnode = curnode.parent
+        tree_size = curnode.size
+        if i in self.elements and j in self.elements:
+            for child in self.children:
+                if i in child.elements and j in child.elements:
+                    return child.tree_distance(i,j)
+            return 1.0*self.size/tree_size
     
+    def copy(self):
+        return copy.deepcopy(self)
+                
+
+
+# class RootTreeNode(ClusterTreeNode):
+#     def __init__(self,elements):
+#         ClusterTreeNode.__init__(self,elements)
+        
 
 def dyadic_tree(n):
     """

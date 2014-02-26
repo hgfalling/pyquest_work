@@ -7,7 +7,7 @@ cnorm = matplotlib.colors.Normalize(vmin=-1,vmax=1,clip=False)
 cmap.set_under('blue')
 cmap.set_over('red') 
 
-def plot_tree(t,nodecolors=None):
+def plot_tree(t,nodecolors=None,leafcolors=None):
     node_locs = np.zeros([t.tree_size,2])
     node_order = []
     for level in xrange(1,t.tree_depth+1):
@@ -18,12 +18,21 @@ def plot_tree(t,nodecolors=None):
         node_xs = x_intervals[:-1] + np.diff(x_intervals)/2.0
         node_ys = (t.tree_depth - level)*np.ones(np.shape(node_xs))
         node_locs[node_idxs,:] = np.hstack([node_xs[:,np.newaxis],node_ys[:,np.newaxis]])
-    if nodecolors is None:
-        nc = 'b'
-        plt.scatter(node_locs[:,0],node_locs[:,1],marker='.',c=nc,s=60)
-    else:
+    if nodecolors is not None:
         nc = nodecolors
-        plt.scatter(node_locs[:,0],node_locs[:,1],marker='.',edgecolors='none',c=nc,norm=cnorm,cmap=cmap,s=60)
+        plt.scatter(node_locs[:,0],node_locs[:,1],marker='.',edgecolors='none',c=nc,norm=cnorm,cmap=cmap,s=80)
+    elif leafcolors is not None:
+        lc = leafcolors
+        nonleaves = (t.tree_size - t.size)
+        nc = ['k']*nonleaves
+        plt.scatter(node_locs[0:nonleaves,0],node_locs[0:nonleaves,1],
+                    edgecolors='none',marker='.',c=nc,s=80)
+        plt.scatter(node_locs[nonleaves:,0],node_locs[nonleaves:,1],
+                    edgecolors='none',marker='.',c=lc,s=80)
+            
+    else:
+        nc = 'k'
+        plt.scatter(node_locs[:,0],node_locs[:,1],marker='.',c=nc,s=80)
 
     for node in t:
         if node.parent is not None:
@@ -33,7 +42,8 @@ def plot_tree(t,nodecolors=None):
     plt.xlim([0.0,1.0])
     plt.ylim([-0.2,t.tree_depth + 0.2])
     
-def plot_embedding(vecs,vals,diff_time=None):
+def plot_embedding(vecs,vals,diff_time=None,nodecolors=None,partition=None,
+                   ax=None):
     
     if diff_time is None:
         diff_time = 1.0/(1.0 - vals[1])
@@ -41,9 +51,17 @@ def plot_embedding(vecs,vals,diff_time=None):
     x=vecs[:,1] * (vals[1] ** diff_time)
     y=vecs[:,2] * (vals[2] ** diff_time)
     z=vecs[:,3] * (vals[3] ** diff_time)
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111,projection="3d")
-
-    ax.scatter3D(x,y,z,c='b')
     
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111,projection="3d")
+
+    if partition is not None:
+        COLORS = "krcmybg"
+        c = [COLORS[w % len(COLORS)] for w in partition]
+    elif nodecolors is not None:
+        c = nodecolors
+    else:
+        c = 'b'
+    
+    ax.scatter3D(x,y,z,c=c,norm=cnorm,cmap=cmap)
