@@ -6,6 +6,7 @@ import matplotlib
 import affinity
 import dual_affinity
 import bintree_construct
+import bin_tree_build
 import barcode
 import markov
 #import scoring
@@ -18,6 +19,7 @@ import viewer_files
 import artificial_data
 import haar
 
+import run_quest
 import contextlib
 
 import cPickle

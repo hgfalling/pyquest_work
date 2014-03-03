@@ -34,13 +34,15 @@ def plot_tree(t,nodecolors=None,leafcolors=None):
         nc = 'k'
         plt.scatter(node_locs[:,0],node_locs[:,1],marker='.',c=nc,s=80)
 
+
     for node in t:
         if node.parent is not None:
             x1,y1 = node_locs[node.idx,:]
             x2,y2 = node_locs[node.parent.idx,:]
             plt.plot((x1,x2),(y1,y2),'r')
+    plt.yticks(np.arange(0,t.tree_depth,1))
     plt.xlim([0.0,1.0])
-    plt.ylim([-0.2,t.tree_depth + 0.2])
+    plt.ylim([-0.2,(t.tree_depth - 1) + 0.2])
     
 def plot_embedding(vecs,vals,diff_time=None,nodecolors=None,partition=None,
                    ax=None):

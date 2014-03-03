@@ -117,3 +117,27 @@ def nn_param(data,start=0):
         if nn:
             order.append(nn[0])
     return order
+
+def emd_nn(emd,start=0):
+    n = emd.shape[0]
+    order = []
+    order.append(start)
+    for _ in xrange(n):
+        nn = [x for x in emd[order[-1],:].argsort() if x not in order]
+        #print "neighbors of {}: {}".format(order[-1],nn)
+        if nn:
+            order.append(nn[0])
+    return order
+
+def organize_diffusion(data,row_vecs,col_vecs):
+    row_order = nn_param(row_vecs)
+    col_order = nn_param(col_vecs)
+    new_data = data[row_order,:][:,col_order]
+    row_sp = np.sum(np.abs(new_data - 
+                           np.roll(new_data,-1,axis=0)),axis=1).argmax()
+    col_sp = np.sum(np.abs(new_data - 
+                           np.roll(new_data,-1,axis=1)),axis=0).argmax()
+    row_order = nn_param(row_vecs,row_order[row_sp])
+    col_order = nn_param(col_vecs,col_order[col_sp])
+    return row_order,col_order
+    

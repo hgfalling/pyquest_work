@@ -126,7 +126,7 @@ class ArtificialQuestionnaire(object):
             if node.idx == 0:
                 node.noise = np.zeros(question_profiles)
             else:
-                node.noise = np.random.multivariate_normal(np.zeros(question_profiles,np.float),np.eye(question_profiles)*people_noise_var)
+                node.noise = np.random.normal(0.0,np.sqrt(people_noise_var),question_profiles)
             if node.level == 1:
                 node.mean = np.zeros(question_profiles)
             elif node.level == 2:
@@ -146,7 +146,7 @@ class ArtificialQuestionnaire(object):
             if node.idx == 0:
                 node.noise = np.zeros(people_profiles)
             else:
-                node.noise = np.random.multivariate_normal(np.zeros(people_profiles,np.float),np.eye(people_profiles)*question_noise_var)
+                node.noise = np.random.normal(0.0,question_noise_var,people_profiles)
             if node.level == 1:
                 node.mean = np.zeros(people_profiles)
             else:

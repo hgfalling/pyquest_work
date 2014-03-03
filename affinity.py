@@ -103,7 +103,9 @@ def gaussian_euclidean(data,knn=5,eps=1.0):
     medians = eps*np.median(dists,1)
     return np.exp(-(row_distances**2/(medians**2)))
 
-        
+def threshold(affinity,threshold):
+    affinity[affinity < threshold] = 0.0
+    return affinity        
 
 
 
