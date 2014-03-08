@@ -77,5 +77,19 @@ def bal_cut(n,balance_constant):
     elif left > right:
         left = right
     return left,right    
-        
-    
+
+def random_binary_tree(n,bal_constant):
+    root = tree.ClusterTreeNode(range(n))
+    queue = [root]
+    while queue:
+        if (max([x.size for x in queue]) == 1 and 
+            max([x.level for x in queue]) == min([x.level for x in queue])):
+            break
+        node = queue.pop(0)
+        left,right = bal_cut(node.size, bal_constant)
+        cut_loc = np.random.randint(left,right+1)
+        labels = np.array(node.elements).argsort().argsort() < cut_loc
+        node.create_subclusters(labels)
+        queue.extend(node.children)
+    root.make_index()
+    return root

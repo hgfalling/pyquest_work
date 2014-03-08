@@ -45,6 +45,9 @@ bwnorm = matplotlib.colors.Normalize(vmin=0,vmax=1,clip=False)
 
 def bwplot(data):
     plt.imshow(data,interpolation='nearest',aspect='auto',cmap=bwmap,norm=bwnorm)
+
+def bwplot2(data):
+    plt.imshow(data,interpolation='nearest',aspect='auto',cmap=bwmap,norm=cnorm)
     
 def cplot(data):
     plt.imshow(data,interpolation='nearest',aspect='auto',cmap=cmap,norm=cnorm)

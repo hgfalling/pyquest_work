@@ -153,9 +153,10 @@ def pyquest(data,params):
         init_row_tree = bintree_construct.median_tree(
                                 init_row_vecs,init_row_vals,max_levels=12)
     elif params.tree_type == TREE_TYPE_FLEXIBLE:
+#        init_row_tree = tree_building.make_tree_embedding(
+#                                row_affinity,params.tree_constant)
         init_row_tree = tree_building.make_tree_embedding(
-                                row_affinity,params.tree_constant)
-    
+                                row_affinity,params.tree_constant)    
     dual_col_trees = []
     dual_row_trees = [init_row_tree]
     

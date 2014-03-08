@@ -69,6 +69,26 @@ def compute_haar(t,return_nodes=False,norm="L2"):
         return haar_basis, node_ids
     else:
         return haar_basis
+    
+def haar_gs(t):
+    basis = np.zeros([t.size,t.size],np.float)
+    idx = 0
+    for node in t:
+        basis[node.elements,idx] = 1.0
+        for i in xrange(idx):
+            basis[:,idx] = basis[:,idx].dot(basis[:,i])
+        
+[m,n] = size(A);
+% compute QR using Gram-Schmidt
+for j = 1:n
+   v = A(:,j);
+   for i=1:j-1
+        R(i,j) = Q(:,i)'*A(:,j);
+        v = v - R(i,j)*Q(:,i);
+   end
+   R(j,j) = norm(v);
+   Q(:,j) = v/R(j,j);
+end
 
 def haar_transform(data,row_tree,norm="L2"):
     basis = compute_haar(row_tree,False,norm)
