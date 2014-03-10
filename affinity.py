@@ -95,10 +95,10 @@ def remove_mean(data):
     return data - means
 
 def gaussian_euclidean(data,knn=5,eps=1.0):
-    row_distances = spsp.distance.squareform(spsp.distance.pdist(data))
+    row_distances = spsp.distance.squareform(spsp.distance.pdist(data.T))
     nn = sknn.NearestNeighbors(n_neighbors=knn)
-    nn.fit(data)
-    dists,_ = nn.kneighbors(data,knn,True)
+    nn.fit(data.T)
+    dists,_ = nn.kneighbors(data.T,knn,True)
     #print dists[0:10]
     medians = eps*np.median(dists,1)
     return np.exp(-(row_distances**2/(medians**2)))

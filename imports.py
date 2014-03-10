@@ -5,21 +5,23 @@ import matplotlib
 
 import affinity
 import dual_affinity
-import bintree_construct
+#import bintree_construct
 import bin_tree_build
+import flex_tree_build
 import barcode
 import markov
 #import scoring
 import tree_util
 import tree
-import tree_building
+#import tree_building
 import tree_recon
 import viewer_files
 #import quest
 import artificial_data
 import haar
 
-import run_quest
+#import run_quest
+import questionnaire
 import contextlib
 
 import cPickle

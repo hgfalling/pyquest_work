@@ -84,7 +84,7 @@ def old_calc_emd(data,row_tree,alpha=1.0,beta=0.0):
 
     return emd
 
-def calc_emd(data,row_tree,alpha=1.0,beta=0.0):
+def calc_emd(data,row_tree,alpha=1.0,beta=0.0,exc_sing=False):
     """
     Calculates the EMD on the *columns* from data and a tree on the rows.
     each level is weighted by 2**((1-level)*alpha)
@@ -95,6 +95,10 @@ def calc_emd(data,row_tree,alpha=1.0,beta=0.0):
 
     folder_fraction = np.array([((node.size*1.0/rows)**beta)*(2.0**((1.0-node.level)*alpha))
                                  for node in row_tree])
+    if exc_sing:
+        for node in row_tree:
+            if node.size == 1:
+                folder_fraction[node.idx] = 0.0
     coefs = tree_util.tree_averages(data,row_tree)
     
     ext_vecs = np.diag(folder_fraction).dot(coefs)
