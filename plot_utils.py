@@ -67,3 +67,4 @@ def plot_embedding(vecs,vals,diff_time=None,nodecolors=None,partition=None,
         c = 'b'
     
     ax.scatter3D(x,y,z,c=c,norm=cnorm,cmap=cmap)
+    plt.title("Diffusion Embedding: $t={0:1.3}$".format(diff_time))

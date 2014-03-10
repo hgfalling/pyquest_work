@@ -5,7 +5,7 @@ import markov
 import tree
 
 def break_node(train_data,col_tree_node,row_tree,regressors=None,
-               alpha=0.5,beta=1.0,col_emd=None):
+               k=6,alpha=0.5,beta=1.0,col_emd=None):
     """
     First calculates the EMD on the columns of train_data 
     in col_tree_node.elements using row_tree. Converts that to an affinity.
@@ -49,7 +49,7 @@ def process_node(train_data,row_tree,node_list,regressors=None,col_emd=None):
     if regressors is None:
         regressors = range(row_tree.size)
 
-    if node.size < 12:
+    if node.size < 15:
         node.create_subclusters(range(node.size))
     else:
         active,lm = break_node(train_data,node,row_tree,regressors,col_emd=col_emd)
@@ -65,7 +65,7 @@ def mtree(train_data,row_tree,regressors=None):
     if regressors is None:
         regressors = range(row_tree.size)
 
-    col_emd = dual_affinity.calc_emd(train_data,row_tree)
+    col_emd = dual_affinity.calc_emd(train_data,row_tree,alpha=0.0,beta=1.0)
 
     while node_list:
         process_node(train_data,row_tree,node_list,regressors,col_emd)

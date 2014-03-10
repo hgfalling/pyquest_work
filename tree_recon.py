@@ -18,6 +18,12 @@ def recon_2d_haar_folder_size(data,row_tree,col_tree,threshold=0.0):
     coefs, folder_sizes = haar.bihaar_transform(data,row_tree,col_tree,True)
     coefs[folder_sizes < threshold] = 0.0
     return haar.inverse_bihaar_transform(coefs,row_tree,col_tree)
+
+def recon_2d_haar_folder_coef_size(data,row_tree,col_tree,threshold=0.0):
+    coefs, folder_sizes = haar.bihaar_transform(data,row_tree,col_tree,True)
+    hits = np.abs(coefs)/folder_sizes > threshold
+    coefs[hits] = threshold*folder_sizes[hits]
+    return haar.inverse_bihaar_transform(coefs,row_tree,col_tree)
     
 def recon_2d_folder_level(data,row_tree,col_tree,row_level,col_level):
     coefs = tree_util.bitree_transform(data,row_tree,col_tree)

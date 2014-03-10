@@ -10,6 +10,7 @@ import numpy as np
 import sys
 
 def load_data(file_path):
+    
     with np.load(file_path) as fdict:
         data = fdict["data"]
         q_descs = fdict["q_descs"]
@@ -18,14 +19,35 @@ def load_data(file_path):
     
     return data,q_descs,p_score_descs,p_scores 
 
+def load_sn_data(file_path):
+    with np.load(file_path) as mfile:
+        data = mfile['matrix']
+        data = np.hstack([data[:,0:347],data[:,348:]])
+        score_titles = [x[0] for x in mfile['score_titles'][0]]
+        doc_titles = [x[0] for x in mfile['doc_titles'][0]]
+        doc_titles = np.hstack([doc_titles[0:347] + doc_titles[348:]]) 
+        words = np.array([x[0][0] for x in mfile['words']])
+        doc_class = mfile['doc_class']    
+        doc_class = np.hstack([doc_class[0,0:347], doc_class[0,348:]]) 
+    return data,score_titles,doc_titles,words,doc_class 
+
 if __name__ == "__main__":
     DEFAULT_DATA_PATH = "./"
 
     if len(sys.argv) == 1:
         file_path = DEFAULT_DATA_PATH + "MMPI2.npz"
+        data,q_descs,p_score_descs,p_scores = load_data(file_path)
     elif sys.argv[1]=="aq":
         file_path = DEFAULT_DATA_PATH + "MMPI2_AntiQuestions.npz"
+        data,q_descs,p_score_descs,p_scores = load_data(file_path)
     elif sys.argv[1]=="de":
         file_path = DEFAULT_DATA_PATH + "MMPI2_Depolarized.npz"
+        data,q_descs,p_score_descs,p_scores = load_data(file_path)
+    elif sys.argv[1]=="sn":
+        file_path = DEFAULT_DATA_PATH + "SN_basic.npz"
+        data,score_titles,doc_titles,words,doc_class = load_sn_data(file_path)
+    elif sys.argv[1]=="snb":
+        file_path = DEFAULT_DATA_PATH + "SN_basic2.npz"
+        data,score_titles,doc_titles,words,doc_class = load_sn_data(file_path)
 
-    data,q_descs,p_score_descs,p_scores = load_data(file_path)
+

@@ -78,17 +78,17 @@ def haar_gs(t):
         for i in xrange(idx):
             basis[:,idx] = basis[:,idx].dot(basis[:,i])
         
-[m,n] = size(A);
-% compute QR using Gram-Schmidt
-for j = 1:n
-   v = A(:,j);
-   for i=1:j-1
-        R(i,j) = Q(:,i)'*A(:,j);
-        v = v - R(i,j)*Q(:,i);
-   end
-   R(j,j) = norm(v);
-   Q(:,j) = v/R(j,j);
-end
+# [m,n] = size(A);
+# % compute QR using Gram-Schmidt
+# for j = 1:n
+#    v = A(:,j);
+#    for i=1:j-1
+#         R(i,j) = Q(:,i)'*A(:,j);
+#         v = v - R(i,j)*Q(:,i);
+#    end
+#    R(j,j) = norm(v);
+#    Q(:,j) = v/R(j,j);
+# end
 
 def haar_transform(data,row_tree,norm="L2"):
     basis = compute_haar(row_tree,False,norm)
