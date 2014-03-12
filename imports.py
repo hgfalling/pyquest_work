@@ -19,6 +19,7 @@ import viewer_files
 #import quest
 import artificial_data
 import haar
+import question_tree
 
 #import run_quest
 import questionnaire

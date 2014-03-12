@@ -91,6 +91,10 @@ def plot_embedding(vecs,vals,**kwargs):
         c = 'b'
     
     ax.scatter3D(x,y,z,c=c,norm=cnorm,cmap=cmap)
-    plt.title("{0} $t={1:1.3}$".format(title,diff_time))
+    if "nodt" not in kwargs:
+        plt.title("{0} $t={1:1.3}$".format(title,diff_time))
+    else:
+        plt.title(title)
+        
     if "azim" in kwargs:
         ax.view_init(kwargs["elev"],kwargs["azim"])

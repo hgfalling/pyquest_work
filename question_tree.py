@@ -5,14 +5,14 @@ import markov
 import tree
 
 def break_node(train_data,col_tree_node,row_tree,regressors=None,
-               k=6,alpha=0.5,beta=1.0,col_emd=None):
+               k=5,alpha=0.0,beta=1.0,col_emd=None):
     """
     First calculates the EMD on the columns of train_data 
     in col_tree_node.elements using row_tree. Converts that to an affinity.
     Calculates the second eigenvector of the markov matrix based on that
     affinity.
     Then fits a linear model using the rows in regressors (all if it's None)
-    and uses the LASSO path to identify the best five rows.
+    and uses the LASSO path to identify the best k rows.
     Splits the node using the predicted eigenvector values.
     """
     
@@ -33,7 +33,7 @@ def break_node(train_data,col_tree_node,row_tree,regressors=None,
     
     _,active,_ = sklm.lars_path(node_data[regressors,:].T,eig,max_iter=50)
     
-    regr_indices = active[0:5]
+    regr_indices = active[0:k]
     
     lm = sklm.LinearRegression()
     lm.fit(node_data[regr_indices,:].T,eig)
@@ -72,3 +72,8 @@ def mtree(train_data,row_tree,regressors=None):
     
     root.make_index()
     return root
+
+def fix_leaves(t):
+    """ARGH FIX THIS"""
+    for level in xrange(tree_depth+1,1,-1):
+        print level
