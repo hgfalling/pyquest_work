@@ -70,10 +70,18 @@ def mtree(train_data,row_tree,regressors=None):
     while node_list:
         process_node(train_data,row_tree,node_list,regressors,col_emd)
     
+    fix_leaves(root)
+    
     root.make_index()
     return root
 
 def fix_leaves(t):
-    """ARGH FIX THIS"""
-    for level in xrange(tree_depth+1,1,-1):
-        print level
+    leaf_levels = [x.level for x in t.dfs_leaves()]
+    bottom_level = max(leaf_levels)
+    leaves = t.dfs_leaves()
+    for node in leaves:
+        while node.level != bottom_level:
+            node.create_subclusters(np.array([0]))
+            node = node.children[0]
+    
+        
