@@ -130,14 +130,31 @@ def emd_nn(emd,start=0):
     return order
 
 def organize_diffusion(data,row_vecs,col_vecs):
-    row_order = nn_param(row_vecs)
-    col_order = nn_param(col_vecs)
-    new_data = data[row_order,:][:,col_order]
-    row_sp = np.sum(np.abs(new_data - 
-                           np.roll(new_data,-1,axis=0)),axis=1).argmax()
-    col_sp = np.sum(np.abs(new_data - 
-                           np.roll(new_data,-1,axis=1)),axis=0).argmax()
-    row_order = nn_param(row_vecs,row_order[row_sp])
-    col_order = nn_param(col_vecs,col_order[col_sp])
-    return row_order,col_order
+    
+    #starts = np.arange(min(data.shape))
+    starts = np.random.randint(0,min(data.shape),2)    
+    l1_dist = np.zeros(len(starts))
+    row_orders = {}
+    col_orders = {}
+    for i in xrange(len(starts)):
+        row_order = nn_param(row_vecs,starts[i])
+        col_order = nn_param(col_vecs,starts[i])
+        new_data = data[row_order,:][:,col_order]
+        row_sp = np.sum(np.abs(new_data - 
+                               np.roll(new_data,-1,axis=0)),axis=1).argmax()
+        col_sp = np.sum(np.abs(new_data - 
+                               np.roll(new_data,-1,axis=1)),axis=0).argmax()
+        row_order = nn_param(row_vecs,row_order[row_sp])
+        col_order = nn_param(col_vecs,col_order[col_sp])
+        new_data = data[row_order,:][:,col_order]
+        row_sp = np.sum(np.abs(new_data - 
+                               np.roll(new_data,-1,axis=0)))
+        col_sp = np.sum(np.abs(new_data - 
+                               np.roll(new_data,-1,axis=1)))
+        l1_dist[i] = row_sp+col_sp
+        row_orders[i] = row_order
+        col_orders[i] = col_order
+    
+    j = l1_dist.argmin()
+    return row_orders[j],col_orders[j]
     

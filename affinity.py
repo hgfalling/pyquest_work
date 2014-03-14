@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.spatial as spsp
 import sklearn.neighbors as sknn
+import warnings
 
 def _norm_ip_abs_aff(data):
     """
@@ -96,10 +97,11 @@ def remove_mean(data):
 
 def gaussian_euclidean(data,knn=5,eps=1.0):
     row_distances = spsp.distance.squareform(spsp.distance.pdist(data.T))
-    nn = sknn.NearestNeighbors(n_neighbors=knn)
-    nn.fit(data.T)
-    dists,_ = nn.kneighbors(data.T,knn,True)
-    #print dists[0:10]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        nn = sknn.NearestNeighbors(n_neighbors=knn)
+        nn.fit(data.T)
+        dists,_ = nn.kneighbors(data.T,knn,True)
     medians = eps*np.median(dists,1)
     return np.exp(-(row_distances**2/(medians**2)))
 

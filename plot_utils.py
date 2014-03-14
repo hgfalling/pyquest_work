@@ -7,6 +7,39 @@ cnorm = matplotlib.colors.Normalize(vmin=-1,vmax=1,clip=False)
 cmap.set_under('blue')
 cmap.set_over('red') 
 
+bwmap = plt.get_cmap("binary_r")
+bwmap.set_under('black')
+bwmap.set_over('white') 
+bwnorm = matplotlib.colors.Normalize(vmin=0,vmax=1,clip=False)
+
+def bwplot(data,**kwargs):
+    plt.imshow(data,interpolation='nearest',aspect='auto',cmap=bwmap,norm=bwnorm)
+
+    if "colorbar" in kwargs:
+        if kwargs["colorbar"]:
+            plt.colorbar()
+    
+    if "title" in kwargs:
+        plt.title(kwargs["title"])
+
+def bwplot2(data, **kwargs):
+    plt.imshow(data,interpolation='nearest',aspect='auto',cmap=bwmap,norm=cnorm)
+    if "colorbar" in kwargs:
+        if kwargs["colorbar"]:
+            plt.colorbar()
+    
+    if "title" in kwargs:
+        plt.title(kwargs["title"])
+    
+def cplot(data, **kwargs):
+    plt.imshow(data,interpolation='nearest',aspect='auto',cmap=cmap,norm=cnorm)
+    if "colorbar" in kwargs:
+        if kwargs["colorbar"]:
+            plt.colorbar()
+    
+    if "title" in kwargs:
+        plt.title(kwargs["title"])
+
 def plot_tree(t,**kwargs):
     """
     kwargs that do something:
@@ -50,6 +83,7 @@ def plot_tree(t,**kwargs):
         plt.title(kwargs["title"])
     plt.xlim([0.0,1.0])
     plt.ylim([-0.2,(t.tree_depth - 1) + 0.2])
+
     
 def plot_embedding(vecs,vals,**kwargs):
     """
