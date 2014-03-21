@@ -1,12 +1,20 @@
+"""
+bin_tree_build.py: Functions for building trees based on cuts of the first
+                   nontrivial eigenvector of a diffusion.
+"""
+
 import tree
 import markov
-
 import numpy as np
 
 def bin_tree_build(affinity,cut_type="r_dyadic",bal_constant=1.0):
     """
     Takes a static, square, symmetric nxn affinity on n nodes and 
     applies the second eigenvector binary cut algorithm to it.
+    cut_types currently supported are: 
+    r_dyadic:   random dyadic; uniform distribution on the legal splits
+                based on the balance constant.
+    zero:       splits the eigenvector at zero, subject to the balance constant 
     """
     
     _,n = affinity.shape
@@ -66,7 +74,6 @@ def bal_cut(n,balance_constant):
     Given n nodes and a balance_constant, returns the endpoints of the 
     interval of legal cutpoints for a binary tree.
     """ 
-    
     if n==1:
         return 0,1
     left = int(np.ceil((1.0/(1.0+balance_constant))*n))
@@ -79,6 +86,10 @@ def bal_cut(n,balance_constant):
     return left,right    
 
 def random_binary_tree(n,bal_constant):
+    """
+    Creates a random binary tree on n nodes that conforms to the balance
+    constant.
+    """
     root = tree.ClusterTreeNode(range(n))
     queue = [root]
     while queue:

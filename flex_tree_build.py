@@ -1,9 +1,17 @@
+"""
+flex_tree_build.py: Functions for building flexible trees based on affinities
+                    between points.
+"""
 import numpy as np
 import markov
 import tree
 import scipy.spatial as spsp
 
 class Cluster(object):
+    """
+    Cluster objects are just sets of elements, with a couple of methods 
+    added for prettiness and usefulness. But you could just use sets instead.
+    """
     def __init__(self,elements):
         self.elements = set(elements)
     
@@ -19,6 +27,12 @@ class Cluster(object):
         return str(list(self.elements))
     
 class Clustering(object):
+    """
+    A Clustering is a level of a tree, which clusters the level below it.
+    So there are n nodes, which could be clusters at the lower level, and
+    the Clustering object contains up to n Clusters that give the 
+    hierarchical partition for the level.
+    """
     def __init__(self,n):
         self.n = n
         self.cluster_lookup = {}
@@ -177,11 +191,14 @@ def cluster_from_distance(distance_matrix,eps=1.0):
             Amins[row] = A[row,Alocs[row]]        
     return clustering
 
-def flex_tree(affinity,penalty_constant,threshold=1e-8):
+def flex_tree_static(affinity,penalty_constant,threshold=1e-8):
     """
     Takes affinity, a square matrix of positive entries representing an 
     affinity between n nodes, and creates a flexible tree based on 
-    that affinity.
+    that affinity. This is *static* because it uses the same affinity 
+    at all levels and doesn't compute a diffusion. All it does is join things
+    based on their closeness (higher affinity). Cluster affinity to each other
+    is the average affinity between elements.
     """ 
     #print "***starting***"
     q = np.eye(affinity.shape[0]) #initialize q for code brevity.
@@ -205,10 +222,13 @@ def flex_tree(affinity,penalty_constant,threshold=1e-8):
 def flex_tree_diffusion(affinity,penalty_constant,n_eigs=12):
     """
     affinity is an nxn affinity matrix.
+    Creates a flexible tree by calculating the diffusion on the given affinity.
+    Then clusters at each level by the flexible tree algorithm. For each level
+    up, doubles the diffusion time.
     penalty_constant is the multiplier of the median diffusion distance.
     """
     #First, we calculate the first n eigenvectors and eigenvalues of the 
-    #"symmetrized" diffusion
+    #diffusion
     cluster_list = []
     vecs,vals = markov.markov_eigs(affinity,n_eigs)
     diff_time = 1.0
@@ -232,13 +252,4 @@ def flex_tree_diffusion(affinity,penalty_constant,n_eigs=12):
         cpart = ClusteringPartition([x.elements for x in temp_tree.dfs_level(2)])
         q,_ = cluster_transform_matrices(cpart)
         diff_time *= 2.0
-        #print diff_time
     return clusterlist_to_tree(cluster_list)
-        
-     
-    
-    
-    
-    
-    
-    

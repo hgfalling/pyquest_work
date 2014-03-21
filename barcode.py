@@ -1,8 +1,11 @@
+"""
+barcode.py: Functions for organizing and arranging data in tree and bi-tree
+            metrics. (so named because when you have coherent organization, 
+            the result when plotted looks like a barcode in black and white.)
+"""
+
 import numpy as np
 import tree_util
-import sklearn.neighbors as sknn
-import scipy.spatial as spsp
-import markov
 
 def bifolder(row_folder,col_folder,data):
     """
@@ -105,15 +108,19 @@ def coef_levels(coefs,tree):
     return mdiffs
 
 def nn_param(data,start=0):
+    """
+    Support function for organize_diffusion. Walks around a collapse diffusion
+    embedding curve by taking the nearest neighbor not already marked.
+    """
+    import sklearn.neighbors as sknn
     n = data.shape[0]
     knn = sknn.NearestNeighbors(n_neighbors=n)
     knn.fit(data)
-    distances,neighbors = knn.kneighbors(data)
+    _,neighbors = knn.kneighbors(data)
     order = []
     order.append(start)
     for _ in xrange(n):
         nn = [x for x in neighbors[order[-1]] if x not in order]
-        #print "neighbors of {}: {}".format(order[-1],nn)
         if nn:
             order.append(nn[0])
     return order
@@ -129,10 +136,12 @@ def emd_nn(emd,start=0):
             order.append(nn[0])
     return order
 
-def organize_diffusion(data,row_vecs,col_vecs):
-    
-    #starts = np.arange(min(data.shape))
-    starts = np.random.randint(0,min(data.shape),2)    
+def organize_diffusion(data,row_vecs,col_vecs,nstarts=10):
+    """
+    Short algorithm to recover a permutation of shuffled data based on 
+    the diffusion embeddings of rows and columns
+    """
+    starts = np.random.randint(0,min(data.shape),nstarts)    
     l1_dist = np.zeros(len(starts))
     row_orders = {}
     col_orders = {}

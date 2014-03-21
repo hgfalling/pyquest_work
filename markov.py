@@ -1,3 +1,8 @@
+"""
+markov.py: Function to calculate vectors and eigenvalues of Markov chain
+           based on an affinity.
+"""
+
 import numpy as np
 import scipy.sparse.linalg as spsl
 
@@ -32,9 +37,9 @@ def markov_eigs(data,n_eigs,normalize=True,thres=1e-8):
     Returns the first n eigenvectors and the corresponding eigenvalues.
     """
     p_mat = make_markov_symmetric(data,thres)
-    return calc_eigs(p_mat,n_eigs,normalize,thres)
+    return _calc_eigs(p_mat,n_eigs,normalize,thres)
 
-def calc_eigs(markov_chain,n_eigs,normalize=True,thres=1e-8):
+def _calc_eigs(markov_chain,n_eigs,normalize=True,thres=1e-8):
     n = np.shape(markov_chain)[0]
     n_eigs = min(n_eigs,n)
     [vectors,singvals,_] = spsl.svds(markov_chain,n_eigs)

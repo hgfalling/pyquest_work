@@ -1,16 +1,21 @@
-import numpy as np
+"""
+questionnaire.py: Main module for running the questionnaire with 
+                  prespecified options. Define parameters in a 
+                  PyQuestParams object, and then run pyquest(data,params).
+"""
+
 import datetime
 import affinity
-import markov
-import flex_tree_build
-import bin_tree_build
 import dual_affinity
+import bin_tree_build
+import flex_tree_build
 
 INIT_AFF_COS_SIM = 0
 INIT_AFF_GAUSSIAN = 1
     
 DEFAULT_INIT_AFF_THRESHOLD = 0.0
 DEFAULT_INIT_AFF_EPSILON = 1.0
+DEFAULT_INIT_AFF_KNN = 5
 
 TREE_TYPE_BINARY = 0
 TREE_TYPE_FLEXIBLE = 1
@@ -51,6 +56,10 @@ class PyQuestParams(object):
                 self.init_aff_epsilon = kwargs["epsilon"]
             else:
                 self.init_aff_epsilon = DEFAULT_INIT_AFF_EPSILON                  
+            if "knn" in kwargs:
+                self.init_aff_knn = kwargs["knn"]
+            else:
+                self.init_aff_knn = DEFAULT_INIT_AFF_KNN
         
     def set_tree_type(self,tree_type,**kwargs):
         self.tree_type = tree_type
@@ -115,7 +124,13 @@ class PyQuestParams(object):
             self.n_trees = DEFAULT_N_TREES
             
 class PyQuestRun(object):
-    def __init__(self,run_desc,row_trees,col_trees,row_tree_descs,col_tree_descs,params):
+    """
+    Holds the results of a run of the questionnaire, which are basically:
+    a description of when the run was done, the trees which were generated on
+    each iteration, and the parameters.
+    """
+    def __init__(self,run_desc,row_trees,col_trees,row_tree_descs,
+                 col_tree_descs,params):
         self.run_desc = run_desc
         self.row_trees = row_trees
         self.col_trees = col_trees
@@ -125,19 +140,19 @@ class PyQuestRun(object):
         
 
 def pyquest(data,params):
-    #params should be a PyQuestParams object
+    """
+    Runs the questionnaire on data with params. 
+    params is a PyQuestParams object.
+    """
 
     if params.init_aff_type == INIT_AFF_COS_SIM:
         init_row_aff = affinity.mutual_cosine_similarity(
                             data.T,False,0,threshold=params.init_aff_threshold)
     elif params.init_aff_type == INIT_AFF_GAUSSIAN:
-        #add KNN to the page
         init_row_aff = affinity.gaussian_euclidean(
-                            data.T, 5, params.init_aff_epsilon)
+                            data.T, params.init_aff_knn, params.init_aff_epsilon)
     
-    #Generate initial tree
-    #print "call1 tree_constant:{}".format(tree_constant)
-
+    #Initial row tree
     if params.tree_type == TREE_TYPE_BINARY:
         init_row_tree = bin_tree_build.bin_tree_build(init_row_aff,'r_dyadic',
                                                       params.tree_bal_constant)

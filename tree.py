@@ -1,7 +1,8 @@
+"""
+tree.py: Defines a tree structure for use in the questionnaire.
+"""
+
 import copy
-"""
-Defines a tree structure for use in the questionnaire.
-"""
 
 class ClusterTreeNode(object):
     def __init__(self,elements,parent=None):
@@ -225,6 +226,11 @@ class ClusterTreeNode(object):
         return [x.idx for x in self.nodes_list if element in x.elements]
     
     def level_partition(self,level):
+        """
+        Returns the entire partition of the tree at the specified level
+        as an array of tree.size with the index of the partition containing
+        a particular point in each position.
+        """
         partition = [0]*self.size
         els = self.sublevel_elements(level)
         for (idx,l) in enumerate(els):
@@ -232,7 +238,10 @@ class ClusterTreeNode(object):
                 partition[m] = idx
         return partition
     
-    def all_parents(self):
+    def all_ancestors(self):
+        """
+        Returns a list of the indices of all the ancestors of a given node.
+        """
         curnode = self
         parents = []
         while curnode.parent is not None:
@@ -240,13 +249,22 @@ class ClusterTreeNode(object):
             curnode = curnode.parent
         return parents
     
-    def all_children(self):
+    def all_descendants(self):
+        """
+        Returns a list of the indices of all the descendants of a given node.
+        """
         if len(self.children) == 0:
             return []
         else:
-            return self.traverse()[1:]
+            return [x.idx for x in self.traverse()[1:]]
 
     def tree_distance(self,i,j):
+        """
+        Returns the tree distance between elements i and j.
+        """
+        if i==j:
+            return 0.0
+                
         curnode = self
         while curnode.parent is not None:
             curnode = curnode.parent
@@ -259,17 +277,10 @@ class ClusterTreeNode(object):
     
     def copy(self):
         return copy.deepcopy(self)
-                
-
-
-# class RootTreeNode(ClusterTreeNode):
-#     def __init__(self,elements):
-#         ClusterTreeNode.__init__(self,elements)
-        
 
 def dyadic_tree(n):
     """
-    Generates the basic dyadic tree on n levels (2**n elements).
+    Generates the basic dyadic tree on 2**n elements
     """
     elements = range(2**n)
     tree_list = [ClusterTreeNode([element]) for element in elements]

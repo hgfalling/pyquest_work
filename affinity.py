@@ -1,6 +1,9 @@
+"""
+affinity.py: Some basic routines for calculating initial affinities.
+"""
+
 import numpy as np
 import scipy.spatial as spsp
-import sklearn.neighbors as sknn
 import warnings
 
 def _norm_ip_abs_aff(data):
@@ -20,7 +23,8 @@ def _norm_ip_abs_aff(data):
     
     return np.abs(inner_products) / norm_constants
 
-def mutual_cosine_similarity(data, take_abs=False,no_data_value=None,threshold=0.0):
+def mutual_cosine_similarity(data, take_abs=False, no_data_value=None,
+                             threshold=0.0):
     """
     data: mxn numpy array.
     
@@ -87,15 +91,23 @@ def correlation(data, take_abs=False):
 
 def remove_mean(data):
     """
-    data : mxn numpy ARRAY
-    
+    data : mxn numpy array
     Returns data, with the mean of each column subtracted.
     """
-    
     means = np.mean(data,axis=0)
     return data - means
 
 def gaussian_euclidean(data,knn=5,eps=1.0):
+    """
+    data: mxn numpy array.
+    
+    Treats columns of data as functions on R^m. 
+    Calculates affinity between columns of data as a Gaussian kernel of
+    width eps*(median distance between 5 nearest neighbors of all points). 
+    Returns nxn symmetric matrix of non-negative affinities.
+    """
+    import sklearn.neighbors as sknn
+
     row_distances = spsp.distance.squareform(spsp.distance.pdist(data.T))
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -106,6 +118,10 @@ def gaussian_euclidean(data,knn=5,eps=1.0):
     return np.exp(-(row_distances**2/(medians**2)))
 
 def threshold(affinity,threshold):
+    """
+    Takes an affinity and thresholds it by setting all entries to 0.0 which
+    are less than threshold.
+    """
     affinity[affinity < threshold] = 0.0
     return affinity        
 

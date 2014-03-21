@@ -1,3 +1,8 @@
+"""
+haar.py: Functions for describing Haar, Haarlike, and tensor Haar bases on
+         discrete spaces and products of discrete spaces.
+""" 
+
 import numpy as np
 
 def haar_vectors(n,node_sizes,norm="L2"):
@@ -70,31 +75,19 @@ def compute_haar(t,return_nodes=False,norm="L2"):
     else:
         return haar_basis
     
-def haar_gs(t):
-    basis = np.zeros([t.size,t.size],np.float)
-    idx = 0
-    for node in t:
-        basis[node.elements,idx] = 1.0
-        for i in xrange(idx):
-            basis[:,idx] = basis[:,idx].dot(basis[:,i])
-        
-# [m,n] = size(A);
-# % compute QR using Gram-Schmidt
-# for j = 1:n
-#    v = A(:,j);
-#    for i=1:j-1
-#         R(i,j) = Q(:,i)'*A(:,j);
-#         v = v - R(i,j)*Q(:,i);
-#    end
-#    R(j,j) = norm(v);
-#    Q(:,j) = v/R(j,j);
-# end
-
 def haar_transform(data,row_tree,norm="L2"):
+    """
+    Computes the Haar transform of data with respect to row_tree. (nothing
+    fancy here, can go faster).
+    """
     basis = compute_haar(row_tree,False,norm)
     return basis.T.dot(data)
     
 def inverse_haar_transform(coefs,row_tree,norm="L2"):
+    """
+    Computes the inverse Haar transform of coefficients with respect to 
+    row_tree. Again nothing fancy here.
+    """
     basis = compute_haar(row_tree)
     if norm == "L1":
         norm_vec = np.sum(np.abs(basis),axis=0)
@@ -107,10 +100,9 @@ def level_correspondence(row_tree):
     Returns a vector of the correspondence of the haar basis vectors to the 
     levels of the tree.
     """
-    level_counts = [[x.size for x in row_tree.dfs_level(i)] for i in xrange(1,row_tree.tree_depth+1)]
-    #print level_counts
+    level_counts = [[x.size for x in row_tree.dfs_level(i)] for i in 
+                    xrange(1,row_tree.tree_depth+1)]
     marks = [0]+[row_tree.size-sum([y-1 for y in x]) for x in level_counts]
-    #print marks
     z = np.zeros(row_tree.size,np.int)
     for (idx,t) in enumerate(marks):
         if idx == len(marks) - 1:
@@ -120,6 +112,10 @@ def level_correspondence(row_tree):
     return z
         
 def bihaar_transform(data,row_tree,col_tree,folder_sizes=False):
+    """
+    Computes the bi-Haar transform into the basis induced by row_tree and 
+    col_tree jointly.
+    """
     if folder_sizes:
         row_hb, row_parents = compute_haar(row_tree,folder_sizes)
         row_parents[row_parents == -1] = 0
@@ -128,9 +124,7 @@ def bihaar_transform(data,row_tree,col_tree,folder_sizes=False):
     else:
         row_hb = compute_haar(row_tree,folder_sizes)
         col_hb = compute_haar(col_tree,folder_sizes)
-    #print row_hb.shape, col_hb.shape, data.shape
     row_transform = row_hb.T.dot(data)
-    #print row_transform.shape
     coefs = col_hb.T.dot(row_transform.T)
     if folder_sizes:
         row_sizes = np.array([row_tree[x].size for x in row_parents])
@@ -141,11 +135,12 @@ def bihaar_transform(data,row_tree,col_tree,folder_sizes=False):
         return coefs.T
     
 def inverse_bihaar_transform(coefs,row_tree,col_tree):
+    """
+    Computes the inverse bi-Haar transform of coefs. 
+    """
     row_hb = compute_haar(row_tree)
     col_hb = compute_haar(col_tree)
-    #print row_hb.shape, col_hb.shape, data.shape
     row_transform = row_hb.dot(coefs)
-    #print row_transform.shape
     matrix = col_hb.dot(row_transform.T)
     return matrix.T
     

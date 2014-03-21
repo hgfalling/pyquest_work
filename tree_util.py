@@ -1,9 +1,7 @@
 """
-Defines various tree transforms.
+tree_util.py: Defines various tree transforms and averages.
 """
-
 import numpy as np
-import scipy.sparse as sparse
 
 def bitree_sums(data,row_tree,col_tree):
     """
@@ -32,6 +30,10 @@ def bitree_sums(data,row_tree,col_tree):
     return sums
 
 def bifolder_sizes(row_tree,col_tree):
+    """
+    Returns the raw sizes of the rectangles implied by the folders in 
+    row_tree and col_tree.
+    """
 
     row_sizes = np.array([x.size for x in row_tree])
     col_sizes = np.array([x.size for x in col_tree])
@@ -40,8 +42,8 @@ def bifolder_sizes(row_tree,col_tree):
 
 def bitree_averages(data,row_tree,col_tree):
     """
-    data is a 2d matrix. row_tree is a tree on the rows (size m)
-    col_tree is a tree on the columns (size n)
+    data is a 2d matrix. row_tree is a tree on the rows (tree_size m)
+    col_tree is a tree on the columns (tree_size n)
     Calculates mean on every bifolder.
     Returns mxn matrix of bifolder means (indices are the node.idx values)
     """
@@ -53,6 +55,7 @@ def bitree_transform(data,row_tree,col_tree):
     data is a 2d matrix. row_tree is a tree on the rows (size m)
     col_tree is a tree on the columns (size n)
     Calculates the bitree transform on every bifolder.
+    This transform is the martingale difference transform.
     Returns mxn matrix of bifolder means (indices are the node.idx values)
     """
     avs = bitree_averages(data,row_tree,col_tree)
@@ -75,49 +78,6 @@ def bitree_transform(data,row_tree,col_tree):
                 
     return coefs
 
-def ibt(coefs,row_tree,col_tree,threshold=0.0):
-    """
-    coefs is an mxn matrix of bitree coefficients
-    row_tree is a tree on the rows (size m)
-    col_tree is a tree on the columns (size n)
-    threshold is on [0,1]. Folders that are less than threshold*matrix size
-    are excluded from the reconstruction.
-    """ 
-
-    bsizes = bifolder_sizes(row_tree,col_tree)      
-    folder_frac = 1.0*bsizes/bsizes[0,0]
-    
-    row_els = {}
-    col_els = {}
-
-    for row in row_tree.traverse():
-        row_els[row.idx] = np.array(row.elements)
-    for col in col_tree.traverse():
-        col_els[col.idx] = np.array(col.elements)
-    
-    mat = np.zeros([row_tree.size,col_tree.size])
-
-    indices = np.where(folder_frac > threshold)
-    rc_pairs = zip(indices[0],indices[1])
-    
-    for (x,y) in rc_pairs:
-        mat[np.ix_(row_els[x],col_els[y])] += coefs[x,y]
-    #return mat, np.sum((folder_frac > threshold)*np.abs(coefs))
-    return mat
-
-def threshold_coefs(coefs,row_tree,col_tree,threshold):
-    new_coefs = coefs.copy()
-    bsizes = bifolder_sizes(row_tree,col_tree)      
-    folder_frac = 1.0*bsizes/bsizes[0,0]
-    for row in row_tree:
-        for col in col_tree:
-            if folder_frac[row.idx,col.idx] > 0.0:
-                if np.max(folder_frac[row.elements,:][:,col.elements]) < threshold:
-                    for r in row.elements:
-                        for c in col.elements:
-                            new_coefs[r,c] = 0.0
-    return inverse_tree_transform(inverse_tree_transform(new_coefs.T,col_tree).T,row_tree)
-                 
 def inverse_bitree_transform(coefs,row_tree,col_tree,threshold=0.0):
     """
     coefs is an mxn matrix of bitree coefficients
@@ -137,8 +97,8 @@ def inverse_bitree_transform_level(coefs,row_tree,col_tree,row_level,col_level):
     coefs is an mxn matrix of bitree coefficients
     row_tree is a tree on the rows (size m)
     col_tree is a tree on the columns (size n)
-    threshold is on [0,1]. Folders that are less than threshold*matrix size
-    are excluded from the reconstruction.
+    Excludes martingale coefficients corresponding to folders whose row_level
+    or col_level exceeds the thresholds.
     """ 
     new_coefs = coefs.copy()
     if row_level < row_tree.tree_depth:
@@ -147,10 +107,6 @@ def inverse_bitree_transform_level(coefs,row_tree,col_tree,row_level,col_level):
     if col_level < col_tree.tree_depth:
         n = [x.idx for x in col_tree if x.level > col_level]
         new_coefs[:,n] = 0.0
-    #m = min([x.idx for x in row_tree if x.level > row_level])
-    #n = min([x.idx for x in col_tree if x.level > col_level])
-    #new_coefs[n:,:] = 0.0
-    #new_coefs[:,m:] = 0.0
     return inverse_tree_transform(inverse_tree_transform(new_coefs.T,col_tree).T,row_tree)
 
 def tree_sums(data,row_tree):
@@ -209,62 +165,6 @@ def tree_transform(data,row_tree):
                 coefs[node.idx,:] = avs[node.idx,:] - avs[node.parent.idx,:]
     return coefs
 
-def tree_product_transform(data,row_tree):
-    avs = tree_averages(data,row_tree)
-    coefs = np.zeros(np.shape(avs))
-    if avs.ndim == 1:
-        for node in row_tree:
-            if node.parent is None:
-                coefs[node.idx] = avs[node.idx]
-            else:
-                coefs[node.idx] = avs[node.idx]/avs[node.parent.idx]
-    else:
-        for node in row_tree:
-            if node.parent is None:
-                coefs[node.idx,:] = avs[node.idx,:]
-            else:
-                coefs[node.idx,:] = avs[node.idx,:]/avs[node.parent.idx,:]
-    coefs[np.isnan(coefs)] = 1.0
-    return coefs
-
-def bitree_product_transform(data,row_tree,col_tree):
-    avs = bitree_averages(data,row_tree,col_tree)
-    coefs = np.zeros(np.shape(avs))
-    
-    #requires that node 0 is the root of the tree
-    coefs[0,0] = avs[0,0]
-    for node in col_tree[1:]:
-        coefs[0,node.idx] = avs[0,node.idx]/avs[0,node.parent.idx]
-    for node in row_tree[1:]:
-        coefs[node.idx,0] = avs[node.idx,0]/avs[node.parent.idx,0]
-    
-    for row_node in row_tree[1:]:
-        for col_node in col_tree[1:]:
-            dparent = avs[row_node.parent.idx,col_node.parent.idx]*avs[row_node.idx,col_node.idx]
-            parent_product = avs[row_node.parent.idx,col_node.idx]*avs[row_node.idx,col_node.parent.idx]
-            coefs[row_node.idx,col_node.idx] = dparent/parent_product
-    
-    coefs[np.isnan(coefs)] = 1.0
-    return coefs
-
-def inverse_bitree_product_transform(coefs,row_tree,col_tree,threshold=0.0):
-    return inverse_tree_product_transform(inverse_tree_product_transform(coefs, row_tree, threshold).T,col_tree,threshold).T
-            
-def inverse_tree_product_transform(coefs,row_tree,threshold=0.0):
-    n = row_tree.size
-    if coefs.ndim == 1:
-        mat = np.ones([row_tree.size],np.float)
-        for node in row_tree:
-            if node.size*1.0/n >= threshold:
-                mat[node.elements] *= coefs[node.idx]
-    else:
-        mat = np.ones([row_tree.size,np.shape(coefs)[1]])
-        for node in row_tree:
-            if node.size*1.0/n >= threshold:
-                mat[node.elements,:] *= coefs[node.idx,:]
-    
-    return mat
-    
 
 def inverse_tree_transform(coefs,row_tree,threshold=0.0):
     """

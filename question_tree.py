@@ -1,4 +1,10 @@
-import sklearn.linear_model as sklm
+"""
+question_tree.py: Proof of concept for algorithm for adaptively reducing
+                  the size of questionnaires while retaining the ability to 
+                  reconstruct a good approximation of the underlying 
+                  probability field.
+"""
+
 import numpy as np
 import dual_affinity
 import markov
@@ -15,7 +21,8 @@ def break_node(train_data,col_tree_node,row_tree,regressors=None,
     and uses the LASSO path to identify the best k rows.
     Splits the node using the predicted eigenvector values.
     """
-    
+    import sklearn.linear_model as sklm
+
     col_indices = col_tree_node.elements
     node_data = train_data[:,col_indices].astype(np.float64)
     
@@ -59,6 +66,9 @@ def process_node(train_data,row_tree,node_list,regressors=None,col_emd=None):
             node_list.extend(node.children)
 
 def mtree(train_data,row_tree,regressors=None):
+    """
+    Generates the question tree on the training data.
+    """
     root = tree.ClusterTreeNode(range(train_data.shape[1]))
     node_list = []
     node_list.append(root)
@@ -76,6 +86,10 @@ def mtree(train_data,row_tree,regressors=None):
     return root
 
 def fix_leaves(t):
+    """
+    Evens out the depth of the tree so that all leaves are at the last level
+    by putting in extra levels.
+    """
     leaf_levels = [x.level for x in t.dfs_leaves()]
     bottom_level = max(leaf_levels)
     leaves = t.dfs_leaves()

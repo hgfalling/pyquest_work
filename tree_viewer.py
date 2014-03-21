@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 datadict should contain the following keys:
 'tree' : a ClusterTreeNode object containing the tree of the data.
@@ -9,26 +11,13 @@ datadict should contain the following keys:
 
 #display/plotting things
 import wx
-from wx.lib.buttons import GenButton
-import matplotlib
-#matplotlib.interactive(True)
-#matplotlib.use('WXAgg')
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
-import numpy as np
-import barcode
-import tree_util
 
 import sys
 _version = 0.01
 
-cmap = plt.get_cmap("RdBu_r")
-cnorm = matplotlib.colors.Normalize(vmin=-1,vmax=1,clip=False)
-cmap.set_under('blue')
-cmap.set_over('red') 
+from plot_utils import *
 
 class TVApp(wx.App):
     def __init__(self, datadict):
@@ -44,16 +33,22 @@ class TVFrame(wx.Frame):
         wx.Frame.__init__(self,parent,obj_id,size=(600,500),pos=(0,100))
         self.SetTitle("Tree Viewer {}".format(_version))
         
+        self.all_panel = wx.Panel(self,wx.ID_ANY,size=self.Size)
+        
         self.tree_panel = TVTreePanel(self,wx.ID_ANY,datadict["tree"],datadict["tree_desc"])
         self.data_panel = TVDataPanel(self,wx.ID_ANY,datadict)
         self.embed_panel = TVEmbedSuperPanel(self,wx.ID_ANY,datadict)
         
-        self.leftsizer = wx.BoxSizer(wx.VERTICAL)
-        self.leftsizer.Add(self.tree_panel,2,wx.EXPAND)
-        self.leftsizer.Add(self.data_panel,1,wx.EXPAND)
-        self.leftsizer.Add(self.embed_panel,3,wx.EXPAND)
+        self.all_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.all_sizer.Add(self.all_panel,1,wx.EXPAND)
+        self.SetSizer(self.all_sizer)
+        
+        self.all_panel.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.all_panel.sizer.Add(self.tree_panel,2,wx.EXPAND|wx.BOTTOM,15)
+        self.all_panel.sizer.Add(self.data_panel,1,wx.EXPAND|wx.ALL, border=15)
+        self.all_panel.sizer.Add(self.embed_panel,3,wx.EXPAND|wx.TOP, border=15)
 
-        self.SetSizer(self.leftsizer)
+        self.all_panel.SetSizer(self.all_panel.sizer)
         
         self.Layout()
         self.Show(1)
@@ -70,11 +65,10 @@ class TVDataPanel(wx.Panel):
         self.tree = datadict["tree"]
         self.data_descs = datadict["data_descs"]
         self.data_txt = wx.TextCtrl(self,wx.ID_ANY,
-                                 style=wx.TE_MULTILINE|wx.TE_READONLY,size=(1000,115))
+                                 style=wx.TE_MULTILINE|wx.TE_READONLY)
         self.update(self.tree_node)
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.AddSpacer((25,25))
-        self.sizer.Add(self.data_txt)
+        self.sizer.Add(self.data_txt,1,wx.EXPAND,border=25)
         self.SetSizer(self.sizer)
         
     def update(self,tree_node):
@@ -104,62 +98,47 @@ class PlotPanel(wx.Panel):
         clr = [c/255. for c in rgbtuple]
         self.figure.set_facecolor( clr )
         self.figure.set_edgecolor( clr )
+        self.canvas.SetBackgroundColour( wx.Colour( *rgbtuple ) )
         
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.Add(self.canvas,1,wx.EXPAND)
-        self.SetSizer(self.sizer)
+        self._resizeflag = False
+
+        self.Bind(wx.EVT_IDLE, self._onIdle)
+        self.Bind(wx.EVT_SIZE, self._onSize)
+        
+    def _onSize( self, event ):
+        self._resizeflag = True
+    
+    def _onIdle( self, evt ):
+        if self._resizeflag:
+            self._resizeflag = False
+            self._SetSize()
+
+    def _SetSize( self ):
+        pixels = tuple( self.GetClientSize() )
+        self.SetSize( pixels )
+        self.canvas.SetSize( pixels )
+        self.figure.set_size_inches( float( pixels[0] )/self.figure.get_dpi(),
+                                     float( pixels[1] )/self.figure.get_dpi() )
 
     def draw(self): 
         pass # abstract, to be overridden by child classes
-
+    
 class TVTreePanel(PlotPanel):
     def __init__(self,parent,obj_id,tree,tree_title):
         PlotPanel.__init__(self,parent,obj_id)
         self.parent = parent
+        self.tree = tree
         self.tree_node = 0
-        self.calculate(tree)
         self.title = tree_title
-        self.init_draw()
+        self.draw()
         
         self.click_id = self.canvas.mpl_connect("button_release_event", self.OnClick)
         self.key_id = self.canvas.mpl_connect("key_release_event", self.OnKey)
 
-    def calculate(self,tree):
-        self.tree = tree
-        #calculate the node locations
-        self.node_locs = np.zeros([tree.tree_size,2])
-
-        for level in xrange(1,tree.tree_depth+1):
-            nodes = tree.dfs_level(level)
-            node_idxs = np.array([node.idx for node in nodes])
-            x_intervals = np.cumsum(np.array([0]+[node.size for node in nodes])*1.0/tree.size)
-            node_xs = x_intervals[:-1] + np.diff(x_intervals)/2.0
-            node_ys = (tree.tree_depth - level)*np.ones(np.shape(node_xs))
-            self.node_locs[node_idxs,:] = np.hstack([node_xs[:,np.newaxis],node_ys[:,np.newaxis]])
-
-    def init_draw(self):
-        self.figure.clear()
-        self.ax = self.figure.add_subplot(111)
-        self.ax.set_title(self.title)
-        self.ax.scatter(self.node_locs[:,0],self.node_locs[:,1],marker='.',color='b',s=40)
-        for node in self.tree.traverse():
-            if node.parent is not None:
-                x1,y1 = self.node_locs[node.idx,:]
-                x2,y2 = self.node_locs[node.parent.idx,:]
-                self.ax.plot((x1,x2),(y1,y2),'r')
-        self.ax.set_xlim([0.0,1.0])
-        self.ax.set_ylim([-0.2,self.tree.tree_depth + 0.2])
-        x1,y1 = self.node_locs[self.tree_node,:]
-        self.marker = self.ax.plot(x1,y1,'s',markersize=6,markerfacecolor='None',markeredgecolor='k',markeredgewidth=2)
-        self.figure.tight_layout()
-        self.canvas.draw()
-                                    
     def draw(self):
-        self.ax.lines.remove(self.marker[0])
-        x1,y1 = self.node_locs[self.tree_node,:]
-        self.marker = self.ax.plot(x1,y1,'s',markersize=6,markerfacecolor='None',markeredgecolor='k',markeredgewidth=2)
-
-        self.figure.tight_layout()
+        self.ax = self.figure.add_subplot(111)
+        plot_tree(self.tree,ax=self.ax,useplt=False)
+        self.figure.tight_layout(pad=0.5)
         self.canvas.draw()
     
     def OnKey(self,evt):
@@ -197,6 +176,97 @@ class TVTreePanel(PlotPanel):
             self.tree_node = np.argmin(distances)
             self.draw()
             self.parent.update(self.tree_node)
+
+#class TVTreePanel(PlotPanel):
+#    def __init__(self,parent,obj_id,tree,tree_title):
+#        PlotPanel.__init__(self,parent,obj_id)
+#        self.parent = parent
+#        self.tree_node = 0
+#        self.calculate(tree)
+#        self.title = tree_title
+#        self.init_draw()
+#        
+#        self.click_id = self.canvas.mpl_connect("button_release_event", self.OnClick)
+#        self.key_id = self.canvas.mpl_connect("key_release_event", self.OnKey)
+#
+#    def calculate(self,tree):
+#        self.tree = tree
+#        #calculate the node locations
+#        self.node_locs = np.zeros([tree.tree_size,2])
+#
+#        for level in xrange(1,tree.tree_depth+1):
+#            nodes = tree.dfs_level(level)
+#            node_idxs = np.array([node.idx for node in nodes])
+#            cs = np.cumsum(np.array([0]+[node.size for node in nodes]))
+#            x_intervals = cs*1.0/tree.size
+#            node_xs = x_intervals[:-1] + np.diff(x_intervals)/2.0
+#            node_ys = (tree.tree_depth - level)*np.ones(np.shape(node_xs))
+#            self.node_locs[node_idxs,:] = np.hstack([node_xs[:,np.newaxis],
+#                                                     node_ys[:,np.newaxis]])
+#
+#    def init_draw(self):
+#        self.figure.clear()
+#        self.ax = self.figure.add_subplot(111)
+#        self.ax.set_title(self.title)
+#        self.ax.scatter(self.node_locs[:,0],self.node_locs[:,1],marker='.',
+#                        color='b',s=40)
+#        for node in self.tree.traverse():
+#            if node.parent is not None:
+#                x1,y1 = self.node_locs[node.idx,:]
+#                x2,y2 = self.node_locs[node.parent.idx,:]
+#                self.ax.plot((x1,x2),(y1,y2),'r')
+#        self.ax.set_xlim([0.0,1.0])
+#        self.ax.set_ylim([-0.2,self.tree.tree_depth + 0.2])
+#        x1,y1 = self.node_locs[self.tree_node,:]
+#        self.marker = self.ax.plot(x1,y1,'s',markersize=6,markerfacecolor='None',
+#                                   markeredgecolor='k',markeredgewidth=2)
+#        self.figure.tight_layout()
+#        self.canvas.draw()
+#                                    
+#    def draw(self):
+#        self.ax.lines.remove(self.marker[0])
+#        x1,y1 = self.node_locs[self.tree_node,:]
+#        self.marker = self.ax.plot(x1,y1,'s',markersize=6,markerfacecolor='None'
+#                                   ,markeredgecolor='k',markeredgewidth=2)
+#
+#        self.figure.tight_layout()
+#        self.canvas.draw()
+#    
+#    def OnKey(self,evt):
+#        if evt.key == "up":
+#            node = [x for x in self.tree.traverse() if x.idx == self.tree_node]
+#            if node[0].parent is not None:
+#                self.tree_node = node[0].parent.idx
+#                self.draw()
+#                self.parent.update(self.tree_node)
+#        if evt.key == "down":
+#            node = [x for x in self.tree.traverse() if x.idx == self.tree_node]
+#            if node[0].children != []:
+#                self.tree_node = node[0].children[0].idx
+#                self.draw()
+#                self.parent.update(self.tree_node)
+#        if evt.key == "right":
+#            node = [x for x in self.tree.traverse() if x.idx == self.tree_node]
+#            if node[0].parent is not None:
+#                self.tree_node = node[0].parent.children[1].idx
+#                self.draw()
+#                self.parent.update(self.tree_node)
+#        if evt.key == "left":
+#            node = [x for x in self.tree.traverse() if x.idx == self.tree_node]
+#            if node[0].parent is not None:
+#                self.tree_node = node[0].parent.children[0].idx
+#                self.draw()
+#                self.parent.update(self.tree_node)
+#        
+#    def OnClick(self,evt):
+#        if evt.xdata is None or evt.ydata is None:
+#            pass
+#        else:
+#            click_loc = np.array([evt.xdata,evt.ydata])
+#            distances = np.sum((self.node_locs - click_loc)**2,axis=1)
+#            self.tree_node = np.argmin(distances)
+#            self.draw()
+#            self.parent.update(self.tree_node)
 
 class TVEmbedSuperPanel(wx.Panel):
     def __init__(self,parent,obj_id,datadict):
@@ -300,7 +370,7 @@ class TVEmbeddingPanel(PlotPanel):
             old_elev,old_azim = None,None
         self.ax = self.figure.add_subplot(111,projection="3d")
         self.ax.set_title(self.title + " (Embedding)")
-        self.ax.scatter3D(x,y,z,c=c,cmap=cmap,norm=cnorm)
+        self.ax.scatter3D(x,y,z,c=c,cmap=rbmap,norm=binnorm)
         self.ax.view_init(old_elev,old_azim)
         
         self.figure.subplots_adjust(left=0.0,right=1.0,top=1.0,bottom=0.0)
