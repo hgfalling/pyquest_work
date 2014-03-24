@@ -137,6 +137,9 @@ def plot_tree(t,**kwargs):
         else:
             ax.set_title(kwargs["title"])
     
+    if "nodelocs" in kwargs:
+        return node_locs
+    
 def plot_embedding(vecs,vals,**kwargs):
     """
     kwargs that do something:
@@ -178,9 +181,9 @@ def plot_embedding(vecs,vals,**kwargs):
     
     ax.scatter3D(x,y,z,c=c,norm=binnorm,cmap=rbmap)
     if "nodt" not in kwargs:
-        plt.title("{0} $t={1:1.3}$".format(title,diff_time))
+        ax.set_title("{0} $t={1:1.3}$".format(title,diff_time))
     else:
-        plt.title(title)
+        ax.set_title(title)
         
     if "azim" in kwargs:
         ax.view_init(kwargs["elev"],kwargs["azim"])

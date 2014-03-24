@@ -1,8 +1,9 @@
 """
-Small script for loading MMPI data to run questionnaire from .npz files
+Small script for loading data to run questionnaire from .npz files
     (nothing) = load MMPI2.npz  (the original file)
     aq        = load MMPI2_AntiQuestions.npz (the doubled questions file)
     de        = load MMPI2.Depolarized.npz (the depolarized file)
+    sn        = load SN_basic.npz 
 Fix the DEFAULT_DATA_PATH before using.
 """
 
@@ -45,9 +46,6 @@ if __name__ == "__main__":
         data,q_descs,p_score_descs,p_scores = load_data(file_path)
     elif sys.argv[1]=="sn":
         file_path = DEFAULT_DATA_PATH + "SN_basic.npz"
-        data,score_titles,doc_titles,words,doc_class = load_sn_data(file_path)
-    elif sys.argv[1]=="snb":
-        file_path = DEFAULT_DATA_PATH + "SN_basic2.npz"
         data,score_titles,doc_titles,words,doc_class = load_sn_data(file_path)
 
 

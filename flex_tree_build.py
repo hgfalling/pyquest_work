@@ -191,7 +191,7 @@ def cluster_from_distance(distance_matrix,eps=1.0):
             Amins[row] = A[row,Alocs[row]]        
     return clustering
 
-def flex_tree_static(affinity,penalty_constant,threshold=1e-8):
+def flex_tree(affinity,penalty_constant,threshold=1e-8):
     """
     Takes affinity, a square matrix of positive entries representing an 
     affinity between n nodes, and creates a flexible tree based on 
